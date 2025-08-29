@@ -13,8 +13,8 @@ MainWindow::MainWindow(QWidget *parent)
     ui->pb_request->setEnabled(false);
     ui->lb_connectStatus->setText("Отключено");
     ui->lb_connectStatus->setStyleSheet("color: red");
-    ui->tb_result->
-
+    ui->tb_result->clear();
+    ui->tb_result->setReadOnly(true);
 
     //При отключении меняем надписи и доступность полей.
     connect(client, &TCPclient::sig_Disconnected, this, [&]{
@@ -38,6 +38,8 @@ MainWindow::MainWindow(QWidget *parent)
     connect(client, &TCPclient::sig_sendFreeSize, this, &MainWindow::DisplayFreeSpace);
     connect(client, &TCPclient::sig_SendReplyForSetData, this, &MainWindow::SetDataReply);
     connect(client, &TCPclient::sig_sendStat, this, &MainWindow::DisplayStat);
+    connect(client, &TCPclient::sig_Error, this, &MainWindow::DisplayError);
+    connect(client, &TCPclient::sig_Success, this, &MainWindow::DisplaySuccess);
 
  /*
   * Соединяем сигналы со слотами
@@ -79,13 +81,20 @@ void MainWindow::DisplayStat(StatServer stat)
 }
 void MainWindow::DisplayError(uint16_t error)
 {
+    QString errorMsg;
     switch (error)
     {
-    case ERR_NO_FREE_SPACE:
-    case ERR_NO_FUNCT:
-    default:
-        break;
+       case ERR_NO_FREE_SPACE:
+           errorMsg = "Ошибка: Недостаточно свободного места на сервере.";
+           break;
+       case ERR_NO_FUNCT:
+           errorMsg = "Ошибка: Запрашиваемая функция не поддерживается сервером.";
+           break;
+       default:
+           errorMsg = "Неизвестная ошибка.";
+           break;
     }
+    ui->tb_result->append("Ошибка: " + errorMsg);
 }
 /*!
  * \brief Метод отображает квитанцию об успешно выполненном сообщениии
@@ -93,12 +102,16 @@ void MainWindow::DisplayError(uint16_t error)
  */
 void MainWindow::DisplaySuccess(uint16_t typeMess)
 {
-    switch (typeMess) {
-    case CLEAR_DATA:
-    default:
-        break;
+    QString successMsg;
+    switch (typeMess)
+    {
+        case CLEAR_DATA:
+            successMsg = "Память на сервере успешно очищена.";
+            break;
+        default:
+            return;
     }
-
+    ui->tb_result->append(successMsg);
 }
 
 /*!
